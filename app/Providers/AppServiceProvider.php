@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $this->configureCommands();
+    }
+
+    /**
+     * Configure the application's commands.
+     */
+    private function configureCommands(): void
+    {
+        DB::prohibitDestructiveCommands($this->app->environment('production'));
     }
 }
