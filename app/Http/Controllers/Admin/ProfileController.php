@@ -8,6 +8,8 @@ use App\Mail\ProfilRejete;
 use App\Mail\ProfilValide;
 use App\Models\Profil;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class ProfileController extends Controller
@@ -19,39 +21,40 @@ class ProfileController extends Controller
         $statut     = $request->statut;
         $motifRejet = $request->motifRejet;
 
-        // Bloquer la validation si aucun document n'a été uploadé
         if ($statut === 'valide' && $profil->documents->isEmpty()) {
             return response()->json([
-                'message' => 'Impossible de valider ce profil : aucun document n\'a été soumis par le membre.',
+                'message' => "Impossible de valider ce profil : aucun document n'a été soumis par le membre.",
             ], 422);
         }
 
-        // suspendu = statut compte uniquement, pas statut profil
-        // profils.statut : en_attente, valide, rejete
-        // users.statut   : en_attente, valide, rejete, suspendu
-        if ($statut !== 'suspendu') {
+        DB::transaction(function () use ($profil, $statut, $motifRejet) {
             $profil->update([
                 'statut'          => $statut,
-                'motif_rejet'     => $statut === 'rejete' ? $motifRejet : null,
+                'motif_rejet'     => in_array($statut, ['rejete', 'suspendu']) ? $motifRejet : null,
                 'date_validation' => $statut === 'valide' ? now() : null,
             ]);
+
+            $profil->user->update([
+                'statut' => $statut,
+                'actif'  => $statut === 'valide',
+            ]);
+        });
+
+        // Mail hors transaction : un échec d'envoi ne doit pas rollback la DB
+        try {
+            if ($statut === 'valide') {
+                Mail::to($profil->user->email)->send(new ProfilValide($profil->user));
+            } else {
+                Mail::to($profil->user->email)->send(new ProfilRejete($profil->user, $statut, $motifRejet));
+            }
+        } catch (\Throwable $e) {
+            Log::error("Échec envoi mail modération profil {$profil->id} : {$e->getMessage()}");
         }
 
-        // Synchroniser le statut du compte utilisateur
-        $profil->user->update([
-            'statut' => $statut,
-            'actif'  => $statut === 'valide',
-        ]);
-
-        // Envoyer le mail de notification
-        if ($statut === 'valide') {
-            Mail::to($profil->user->email)->send(new ProfilValide($profil->user));
-        } else {
-            Mail::to($profil->user->email)->send(new ProfilRejete($profil->user, $statut, $motifRejet));
-        }
+        $profil->refresh();
 
         return response()->json([
-            'message' => "Profil $statut avec succès.",
+            'message' => "Profil {$statut} avec succès.",
             'profil'  => [
                 'id'             => $profil->id,
                 'statut'         => $profil->statut,
