@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\Contracts\OAuthenticatable;
@@ -12,7 +13,7 @@ use Laravel\Passport\HasApiTokens;
 class User extends Authenticatable implements OAuthenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, HasUuids, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -20,9 +21,16 @@ class User extends Authenticatable implements OAuthenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'nom',
+        'prenom',
         'email',
         'password',
+        'telephone',
+        'date_naissance',
+        'genre',
+        'role',
+        'statut',
+        'actif',
     ];
 
     /**
@@ -43,8 +51,15 @@ class User extends Authenticatable implements OAuthenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'email_verifie_at' => 'datetime',
             'password' => 'hashed',
+            'actif' => 'boolean',
+            'date_naissance' => 'date',
         ];
+    }
+
+    public function profil(): HasOne
+    {
+        return $this->hasOne(Profil::class);
     }
 }
