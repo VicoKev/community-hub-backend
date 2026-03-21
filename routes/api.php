@@ -14,3 +14,20 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->group(function (): void {
         ->name('register');
 
 });
+
+/* 
+ ROUTES PROTÉGÉES
+ */
+Route::prefix('v1/auth')->name('api.v1.auth.')->middleware('auth:api')->group(function (): void {
+            
+    // Vérification email
+    Route::prefix('email')->name('email.')->group(function (): void {
+ 
+        // Vérifier le code de vérification reçu par email
+        Route::post('verify', [AuthController::class, 'verifyCode'])
+            ->middleware('throttle:10,1')
+            ->name('verify');
+ 
+    });
+ 
+});
