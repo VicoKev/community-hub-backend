@@ -23,4 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 429);
             }
         });
+
+        $exceptions->render(function (\Symfony\Component\Routing\Exception\RouteNotFoundException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Route non trouvée.',
+                ], 404);
+            }
+        });
     })->create();
