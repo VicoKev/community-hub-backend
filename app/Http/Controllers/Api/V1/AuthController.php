@@ -244,4 +244,36 @@ class AuthController extends Controller
             ],
         );
     }
+
+    /**
+     * Déconnexion
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return $this->unauthorized('Utilisateur non authentifié.');
+            }
+
+            $token = $user->token();
+
+            if (!$token) {
+                return $this->badRequest('Jeton d\'authentification introuvable.');
+            }
+
+            $token->revoke();
+
+            return $this->successResponse(message: 'Déconnexion réussie.');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la déconnexion', [
+                'user_id'   => $user->id,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return $this->serverError('Une erreur est survenue lors de la déconnexion. Veuillez réessayer plus tard.');
+        }
+    }
 }

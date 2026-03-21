@@ -39,5 +39,9 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->middleware('auth:api')->group(fu
             ->name('resend');
  
     });
+
+    // Déconnexion
+    Route::post('logout', [AuthController::class, 'logout'])
+        ->name('logout');
  
 });
