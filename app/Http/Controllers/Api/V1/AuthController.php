@@ -56,10 +56,6 @@ class AuthController extends Controller
             $user = $result['user'];
 
             $tokenResult = $user->createToken('register_token');
-            // Définir expiration du token à 1 mois
-            $tokenResult->token->expires_at = now()->addMonth();
-            $tokenResult->token->save();
-
             $accessToken = $tokenResult->accessToken;
 
             // try {
@@ -233,9 +229,6 @@ class AuthController extends Controller
         $user->tokens()->each(fn($token) => $token->revoke());
 
         $tokenResult = $user->createToken('login');
-        $tokenResult->token->expires_at = now()->addMonth();
-        $tokenResult->token->save();
-
         $accessToken = $tokenResult->accessToken;
 
         return $this->successResponse(
