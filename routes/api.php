@@ -10,7 +10,7 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->group(function (): void {
  
     // Inscription 
     Route::post('register', [AuthController::class, 'register'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:5,1')
         ->name('register');
 
     // Connexion
@@ -30,7 +30,7 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->middleware('auth:api')->group(fu
  
         // Vérifier le code de vérification reçu par email
         Route::post('verify', [AuthController::class, 'verifyCode'])
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:5,1')
             ->name('verify');
  
         // Renvoyer un nouveau code de vérification
