@@ -28,6 +28,11 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->middleware('auth:api')->group(fu
             ->middleware('throttle:10,1')
             ->name('verify');
  
+        // Renvoyer un nouveau code de vérification
+        Route::post('resend', [AuthController::class, 'resendVerifyCode'])
+            ->middleware('throttle:3,1')
+            ->name('resend');
+ 
     });
  
 });

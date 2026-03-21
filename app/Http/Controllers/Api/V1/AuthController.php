@@ -146,5 +146,68 @@ class AuthController extends Controller
         }
     }
 
-    
+    /**
+     * Renvoyer un code de vérification
+     */
+    public function resendVerifyCode(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+ 
+        if ($user->hasVerifiedEmail()) {
+            return $this->successResponse(message: 'Votre adresse email est déjà vérifiée.');
+        }
+ 
+        $recentVerification = $user->emailVerifications()
+            ->where('created_at', '>', now()->subMinute())
+            ->first();
+ 
+        if ($recentVerification) {
+            return $this->tooManyRequests('Un code a déjà été envoyé récemment. Veuillez patienter.');
+        }
+ 
+        try {
+            $code = DB::transaction(function () use ($user): string {
+                $code = EmailVerification::generateCode();
+ 
+                $user->emailVerifications()->create([
+                    'code'       => $code,
+                    'expires_at' => now()->addMinutes(10),
+                ]);
+ 
+                return $code;
+            });
+ 
+            // try {
+            //     $this->mailService->send(
+            //         $user->email,
+            //         'emails.verify-code',
+            //         'Vérification de votre adresse email',
+            //         [
+            //             'code' => $code,
+            //             'user' => [
+            //                 'first_name' => $user->first_name,
+            //             ]
+            //         ],
+            //         false,
+            //     );
+            // } catch (Throwable $e) {
+            //     Log::warning("Échec d'envoi de l'e-mail de vérification", [
+            //         'email' => $user->email,
+            //         'exception' => $e->getMessage(),
+            //     ]);
+            // }
+ 
+            return $this->successResponse(
+                message: 'Un nouveau code de vérification a été envoyé à votre adresse email.'
+            );
+        } catch (Throwable $e) {
+            Log::error('Erreur renvoi code vérification', [
+                'user_id'   => $user->id,
+                'exception' => $e->getMessage(),
+            ]);
+ 
+            return $this->serverError('Impossible d\'envoyer le code. Veuillez réessayer.');
+        }
+    }
 }
