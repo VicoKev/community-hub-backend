@@ -3,14 +3,16 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\V1\Auth\VerifyCodeRequest;
+use App\Http\Requests\V1\Auth\LoginRequest;
 use App\Http\Requests\V1\Auth\RegisterRequest;
+use App\Http\Requests\V1\Auth\VerifyCodeRequest;
 use App\Models\EmailVerification;
 use App\Models\User;
 use App\Services\MailService;
 use App\Traits\JsonApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -153,31 +155,31 @@ class AuthController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
- 
+
         if ($user->hasVerifiedEmail()) {
             return $this->successResponse(message: 'Votre adresse email est déjà vérifiée.');
         }
- 
+
         $recentVerification = $user->emailVerifications()
             ->where('created_at', '>', now()->subMinute())
             ->first();
- 
+
         if ($recentVerification) {
             return $this->tooManyRequests('Un code a déjà été envoyé récemment. Veuillez patienter.');
         }
- 
+
         try {
             $code = DB::transaction(function () use ($user): string {
                 $code = EmailVerification::generateCode();
- 
+
                 $user->emailVerifications()->create([
                     'code'       => $code,
                     'expires_at' => now()->addMinutes(10),
                 ]);
- 
+
                 return $code;
             });
- 
+
             // try {
             //     $this->mailService->send(
             //         $user->email,
@@ -197,7 +199,7 @@ class AuthController extends Controller
             //         'exception' => $e->getMessage(),
             //     ]);
             // }
- 
+
             return $this->successResponse(
                 message: 'Un nouveau code de vérification a été envoyé à votre adresse email.'
             );
@@ -206,8 +208,47 @@ class AuthController extends Controller
                 'user_id'   => $user->id,
                 'exception' => $e->getMessage(),
             ]);
- 
+
             return $this->serverError('Impossible d\'envoyer le code. Veuillez réessayer.');
         }
+    }
+
+    /**
+     * Authentification d'un utilisateur existant
+     */
+    public function login(LoginRequest $request): JsonResponse
+    {
+        if (! Auth::attempt($request->only('email', 'password'))) {
+            return $this->unauthorized('Identifiants invalides.');
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (! $user->hasVerifiedEmail()) {
+            Auth::logout();
+            return $this->forbidden('Votre adresse email n\'est pas encore vérifiée.');
+        }
+
+        $user->tokens()->each(fn($token) => $token->revoke());
+
+        $tokenResult = $user->createToken('login');
+        $tokenResult->token->expires_at = now()->addMonth();
+        $tokenResult->token->save();
+
+        $accessToken = $tokenResult->accessToken;
+
+        return $this->successResponse(
+            message: 'Connexion réussie.',
+            data: [
+                'user' => [
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->getFullNameAttribute(),
+                    'email' => $user->email,
+                ],
+                'token' => $accessToken,
+            ],
+        );
     }
 }
