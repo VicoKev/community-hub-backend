@@ -13,6 +13,11 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->group(function (): void {
         ->middleware('throttle:10,1')
         ->name('register');
 
+    // Connexion
+    Route::post('login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login');
+
 });
 
 /* 
