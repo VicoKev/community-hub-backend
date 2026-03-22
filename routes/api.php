@@ -20,7 +20,7 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->group(function (): void {
 
     // Mot de passe oublié
     Route::post('password/forgot', [AuthController::class, 'forgotPassword'])
-        ->middleware('throttle:3,10')
+        ->middleware('throttle:5,10')
         ->name('password.forgot');
 
 });
