@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\V1\Auth\LoginRequest;
 use App\Http\Requests\V1\Auth\RegisterRequest;
 use App\Http\Requests\V1\Auth\VerifyCodeRequest;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 use Throwable;
 
 class AuthController extends Controller
@@ -266,7 +268,6 @@ class AuthController extends Controller
             $token->revoke();
 
             return $this->successResponse(message: 'Déconnexion réussie.');
-
         } catch (\Exception $e) {
             Log::error('Erreur lors de la déconnexion', [
                 'user_id'   => $user->id,
@@ -274,6 +275,46 @@ class AuthController extends Controller
             ]);
 
             return $this->serverError('Une erreur est survenue lors de la déconnexion. Veuillez réessayer plus tard.');
+        }
+    }
+
+    /**
+     * Demander un lien de réinitialisation de mot de passe
+     */
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        try {
+            $user = User::where('email', $request->email)->first();
+
+            if ($user) {
+                $token = Password::createToken($user);
+                $resetLink = route('api.v1.auth.password.reset', ['token' => $token, 'email' => $user->email]);
+
+                $this->mailService->send(
+                    $user->email,
+                    'emails.password-reset',
+                    'Réinitialisation de votre mot de passe',
+                    [
+                        'user' => [
+                            'first_name' => $user->first_name
+                        ],
+                        'resetLink' => $resetLink,
+                    ],
+                    false,
+                );
+            }
+
+            return $this->successResponse(
+                message: 'Si cette adresse email est enregistrée, vous recevrez un lien de réinitialisation.'
+            );
+        } catch (Throwable $e) {
+            Log::error('Erreur demande reset password', [
+                'email'     => $request->email,
+                'ip'        => $request->ip(),
+                'exception' => $e->getMessage(),
+            ]);
+
+            return $this->serverError('Erreur lors de l\'envoi. Veuillez réessayer plus tard.');
         }
     }
 }

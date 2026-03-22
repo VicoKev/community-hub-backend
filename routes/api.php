@@ -18,6 +18,11 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->group(function (): void {
         ->middleware('throttle:5,1')
         ->name('login');
 
+    // Mot de passe oublié
+    Route::post('password/forgot', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:3,10')
+        ->name('password.forgot');
+
 });
 
 /* 
