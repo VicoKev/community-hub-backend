@@ -23,6 +23,11 @@ Route::prefix('v1/auth')->name('api.v1.auth.')->group(function (): void {
         ->middleware('throttle:5,10')
         ->name('password.forgot');
 
+    // Réinitialisation du mot de passe
+    Route::post('password/reset', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:5,10')
+        ->name('password.reset');
+
 });
 
 /* 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\V1\Auth\LoginRequest;
 use App\Http\Requests\V1\Auth\RegisterRequest;
+use App\Http\Requests\V1\Auth\ResetPasswordRequest;
 use App\Http\Requests\V1\Auth\VerifyCodeRequest;
 use App\Models\EmailVerification;
 use App\Models\User;
@@ -14,10 +15,12 @@ use App\Traits\JsonApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Throwable;
 
 class AuthController extends Controller
@@ -315,6 +318,52 @@ class AuthController extends Controller
             ]);
 
             return $this->serverError('Erreur lors de l\'envoi. Veuillez réessayer plus tard.');
+        }
+    }
+
+    /**
+     * Réinitialiser le mot de passe
+     */
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        try {
+            $status = Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'),
+                function (User $user, string $password): void {
+                    DB::transaction(function () use ($user, $password): void {
+                        $user->forceFill([
+                            'password'       => Hash::make($password),
+                            'remember_token' => Str::random(60),
+                        ])->save();
+ 
+                        $user->tokens()->each(fn ($token) => $token->revoke());
+ 
+                        event(new PasswordReset($user));
+                    });
+                }
+            );
+ 
+            if ($status === Password::PASSWORD_RESET) {
+                return $this->successResponse(
+                    message: 'Mot de passe réinitialisé avec succès. Veuillez vous connecter.'
+                );
+            }
+ 
+            $errorMessages = [
+                Password::INVALID_TOKEN => 'Ce lien de réinitialisation est invalide ou a expiré.',
+                Password::INVALID_USER  => 'Aucun compte trouvé avec cette adresse email.',
+                Password::RESET_THROTTLED => 'Trop de tentatives. Réessayez plus tard.',
+            ];
+ 
+            return $this->errorResponse($errorMessages[$status] ?? 'Erreur de réinitialisation.', 422);
+        } catch (Throwable $e) {
+            Log::error('Erreur reset password', [
+                'email'     => $request->email,
+                'ip'        => $request->ip(),
+                'exception' => $e->getMessage(),
+            ]);
+ 
+            return $this->serverError('Erreur lors de la réinitialisation. Veuillez réessayer.');
         }
     }
 }
