@@ -287,7 +287,7 @@ class AuthController extends Controller
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
         try {
-            $user = User::where('email', $request->email)->first();
+            $user = User::firstWhere('email', $request->email);
 
             if ($user) {
                 $token = Password::createToken($user);
