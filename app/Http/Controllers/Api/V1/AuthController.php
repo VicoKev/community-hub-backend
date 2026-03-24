@@ -291,7 +291,7 @@ class AuthController extends Controller
 
             if ($user) {
                 $token = Password::createToken($user);
-                $resetLink = route('api.v1.auth.password.reset', ['token' => $token, 'email' => $user->email]);
+                $resetLink = config('app.frontend_url') . "/reset-password?token={$token}&email={$user->email}";
 
                 $this->mailService->send(
                     $user->email,
