@@ -19,6 +19,12 @@ class User extends Authenticatable implements OAuthenticatable
     use HasUuid, HasApiTokens, HasRoles, HasFactory, Notifiable, SoftDeletes;
 
     /**
+     * Guard name for Spatie roles and permissions
+     * @var string
+     */
+    protected string $guard_name = 'api';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
