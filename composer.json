@@ -75,6 +75,28 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "rector": [
+            "@php vendor/bin/rector --ansi"
+        ],
+        "test-rector": [
+            "@php vendor/bin/rector --dry-run --ansi"
+        ],
+        "pint": [
+            "@php vendor/bin/pint"
+        ],
+        "test-pint": [
+            "@php vendor/bin/pint --test"
+        ],
+        "test-pint-v": [
+            "@php vendor/bin/pint --test -v"
+        ],
+        "phpstan": [
+            "@php vendor/bin/phpstan analyse"
+        ],
+        
+        "pest": [
+            "@php vendor/bin/pest --parallel --coverage --min=100"
         ]
     },
     "extra": {
