@@ -44,7 +44,7 @@ final class ProfileController extends Controller
     }
 
     /**
-     * Profil détaillé — Page de profil public.
+     * Profil détaillé
      */
     public function show(Profile $profile): JsonResponse
     {
