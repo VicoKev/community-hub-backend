@@ -74,7 +74,7 @@ class AuthController extends Controller
             //                 'first_name' => $result['user']->first_name
             //             ]
             //         ],
-            //         false,
+            //         true,
             //     );
             // } catch (Throwable $e) {
             //     Log::warning("Échec d'envoi de l'e-mail de vérification", [
@@ -192,7 +192,7 @@ class AuthController extends Controller
             //                 'first_name' => $user->first_name,
             //             ]
             //         ],
-            //         false,
+            //         true,
             //     );
             // } catch (Throwable $e) {
             //     Log::warning("Échec d'envoi de l'e-mail de vérification", [
@@ -303,7 +303,7 @@ class AuthController extends Controller
                         ],
                         'resetLink' => $resetLink,
                     ],
-                    false,
+                    true,
                 );
             }
 
