@@ -7,11 +7,14 @@ namespace App\Models;
 use App\Enums\EducationLevel;
 use App\Enums\ProfileCategory;
 use App\Enums\ProfileStatus;
+use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Profile extends Model
+final class Profile extends Model
 {
+    use HasUuid;
+
     protected $fillable = [
         'user_id',
         'phone',
