@@ -1,9 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterval;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +16,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 
-class AppServiceProvider extends ServiceProvider
+final class AppServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
@@ -31,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDates();
         $this->configureUrls();
         $this->configurePassport();
+        $this->configureScramble();
     }
 
     /**
@@ -75,5 +81,19 @@ class AppServiceProvider extends ServiceProvider
         Passport::tokensExpireIn(CarbonInterval::days(15));
         Passport::refreshTokensExpireIn(CarbonInterval::days(30));
         Passport::personalAccessTokensExpireIn(CarbonInterval::months(6));
+    }
+
+    /**
+     * Configure Scramble API documentation.
+     */
+    private function configureScramble(): void
+    {
+        Scramble::configure()
+            ->withDocumentTransformers(function (OpenApi $openApi) {
+                $securityScheme = SecurityScheme::http('bearer', 'JWT');
+                if ($securityScheme instanceof SecurityScheme) {
+                    $openApi->secure($securityScheme);
+                }
+            });
     }
 }
