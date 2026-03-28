@@ -33,6 +33,7 @@ class AuthController extends Controller
 
     /**
      * Inscription d'un nouvel utilisateur
+     * @unauthenticated
      */
     public function register(RegisterRequest $request): JsonResponse
     {
