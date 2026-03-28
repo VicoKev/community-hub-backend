@@ -8,9 +8,9 @@ use App\Events\ProfileSubmitted;
 use App\Listeners\NotifyAdminsOfNewProfile;
 use App\Listeners\SendProfileApprovedNotification;
 use App\Listeners\SendProfileRejectedNotification;
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider as BaseEventServiceProvider;
 
-class EventServiceProvider extends ServiceProvider
+class EventServiceProvider extends BaseEventServiceProvider
 {
     protected $listen = [
         ProfileSubmitted::class => [
@@ -20,9 +20,9 @@ class EventServiceProvider extends ServiceProvider
         ProfileApproved::class => [
             SendProfileApprovedNotification::class,
         ],
- 
+
         ProfileRejected::class => [
-            SendProfileRejectedNotification::class, 
+            SendProfileRejectedNotification::class,
         ],
     ];
 
