@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\ProfileStatus;
-use App\Events\ProfileApproved;
-use App\Events\ProfileRejected;
-use App\Events\ProfileSubmitted;
 use App\Models\Profile;
 use App\Models\User;
+use App\Services\MailService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 final class ProfileService
 {
+    public function __construct(
+        private MailService $mailService
+    ) {}
+
     /**
      * Créer ou mettre à jour le profil d'un utilisateur.
      */
@@ -41,7 +43,26 @@ final class ProfileService
 
             // Notifier les admins d'un nouveau profil à valider
             if ($profile->wasRecentlyCreated) {
-                event(new ProfileSubmitted($profile));
+                $profile = $profile->loadMissing('user');
+                $user = $profile->user;
+
+                $admins = User::role(['admin'])->get();
+
+                if ($admins->isNotEmpty()) {
+                    $adminEmails = $admins->pluck('email')->toArray();
+
+                    $this->mailService->send(
+                        to: User::role(['super_admin'])->first(),
+                        view: 'emails.admin.new-profile',
+                        subject: 'Nouveau profil à valider — ' . $user->full_name,
+                        data: [
+                            'profile' => $profile,
+                            'user' => $user,
+                        ],
+                        useQueue: true,
+                        bcc: $adminEmails,
+                    );
+                }
             }
 
             return $profile->fresh();
@@ -66,7 +87,22 @@ final class ProfileService
             ]);
         });
 
-        event(new ProfileApproved($profile));
+        // Envoyer la notification d'approbation à l'utilisateur
+        $profile = $profile->loadMissing('user');
+        $user = $profile->user;
+
+        if ($user) {
+            $this->mailService->send(
+                to: $user,
+                view: 'emails.profile.approved',
+                subject: 'Votre profil a été approuvé !',
+                data: [
+                    'profile' => $profile,
+                    'user' => $user,
+                ],
+                useQueue: true,
+            );
+        }
 
         ActivityLogService::log($admin, 'profile.approved', $profile, [
             'profile_owner' => $profile->user_id,
@@ -89,7 +125,23 @@ final class ProfileService
             ]);
         });
 
-        event(new ProfileRejected($profile, $reason));
+        // Envoyer la notification de rejet à l'utilisateur
+        $profile = $profile->loadMissing('user');
+        $user = $profile->user;
+
+        if ($user) {
+            $this->mailService->send(
+                to: $user,
+                view: 'emails.profile.rejected',
+                subject: 'Votre profil nécessite des corrections',
+                data: [
+                    'profile' => $profile,
+                    'user' => $user,
+                    'reason' => $reason,
+                ],
+                useQueue: true,
+            );
+        }
 
         ActivityLogService::log($admin, 'profile.rejected', $profile, [
             'reason' => $reason,

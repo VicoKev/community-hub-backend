@@ -1,5 +1,5 @@
 <x-email>
-    <h3>Bonjour {{ $admin->first_name }},</h3>
+    <h3>Nouvelle notification administrative</h3>
 
     <p>Un nouvel utilisateur vient de soumettre son profil pour validation sur la plateforme.</p>
 
@@ -12,7 +12,7 @@
     <p>Veuillez vous connecter à l'interface d'administration pour examiner et valider ce profil.</p>
 
     <div style="text-align:center; margin: 20px 0;">
-        <a href="{{ config('app.frontend_url') }}/admin/profiles/{{ $profile->id }}" 
+        <a href="{{ config('app.frontend_url') }}/admin/profiles/{{ $profile->id }}"
            style="display:inline-block; padding:12px 25px; font-size:16px; color:#fff; background-color:#556ee6; border-radius:5px; text-decoration:none;">
            Voir le profil
         </a>
