@@ -50,4 +50,18 @@ class RegisterRequest extends FormRequest
             'password.regex' => 'Le mot de passe doit contenir au moins une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial.',
         ];
     }
+
+    /**
+     * Prepare the data for validation.
+     * 
+     * @return void
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => strtolower($this->input('email')),
+            ]);
+        }
+    }
 }
